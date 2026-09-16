@@ -125,6 +125,16 @@ footer a{color:var(--accent-deep)}
       <label for="qselect">Question</label>
       <select id="qselect"></select>
       <details class="goodlook"><summary>What good looks like</summary><ul id="hints"></ul></details>
+      <details class="goodlook"><summary>Add your own question</summary>
+        <div style="margin-top:10px">
+          <input id="cqText" placeholder="e.g. Tell me about a time you influenced without authority."
+            style="width:100%;font-family:'Newsreader',Georgia,serif;font-size:1rem;padding:10px 12px;border:1.5px solid var(--ink);border-radius:2px;background:#fffdf6;margin-bottom:8px">
+          <textarea id="cqHints" placeholder="What good looks like — one hint per line (optional)"
+            style="min-height:80px;font-size:.95rem"></textarea>
+          <div class="btnrow"><button class="action ghost" id="cqAdd">Add question</button></div>
+          <div id="cqList" style="margin-top:10px"></div>
+        </div>
+      </details>
       <label>Timer</label>
       <div class="timer">
         <span id="clock">00:00</span>
@@ -159,7 +169,7 @@ footer a{color:var(--accent-deep)}
 
 <script>
 /* ============ data ============ */
-const QUESTIONS = [
+const BUILT_IN = [
   {q:"Tell me about yourself.", hints:["Lead with identity, not chronology","Name your specialty and the scale you operate at","Cite 2–3 metrics","End with what you're looking for"]},
   {q:"Tell me about a time you improved the reliability of a system you owned.", hints:["Frame it as a systems problem, not a single fix","Name the tradeoff you weighed","Give before/after numbers","Mention rollout safety"]},
   {q:"Walk me through a large migration you contributed to.", hints:["Scale: how many jobs/services/teams","Reusable patterns beat one-off moves","How you kept developer trust","What you'd do differently"]},
@@ -181,6 +191,11 @@ const SAMPLE_BANK = `# API Latency Reduction
 - Situation: CI signal was unusable — 30% of main-branch runs failed on flakes.
 - Action: built a quarantine pipeline that auto-bisected flakes, filed tickets with repro data, and blocked only on real failures.
 - Result: flake-driven failures down to 4%; developer trust in CI recovered.`;
+
+/* custom questions (localStorage) merged after built-ins */
+function getCustom(){ try{ return JSON.parse(localStorage.getItem('ic_custom_qs')||'[]'); }catch(e){ return []; } }
+function allQuestions(){ return BUILT_IN.concat(getCustom().map(c=>({q:c.q,hints:c.hints,custom:true}))); }
+let QUESTIONS = allQuestions();
 
 /* ============ tabs ============ */
 document.querySelectorAll('.tabs button').forEach(b=>{
@@ -217,7 +232,14 @@ bankCount();
 
 /* ============ interview ============ */
 const qselect = document.getElementById('qselect');
-QUESTIONS.forEach((item,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=item.q; qselect.appendChild(o); });
+function buildQSelect(){
+  QUESTIONS = allQuestions();
+  qselect.innerHTML='';
+  QUESTIONS.forEach((item,i)=>{ const o=document.createElement('option'); o.value=i;
+    o.textContent=(item.custom?'✎ ':'')+item.q; qselect.appendChild(o); });
+  renderHints();
+}
+buildQSelect();
 function renderHints(){
   const ul=document.getElementById('hints'); ul.innerHTML='';
   QUESTIONS[qselect.value].hints.forEach(h=>{ const li=document.createElement('li'); li.textContent=h; ul.appendChild(li); });
@@ -245,6 +267,29 @@ document.getElementById('tReset').addEventListener('click',()=>{
   clock.textContent='00:00'; clock.classList.remove('over');
   document.getElementById('tStart').textContent='Start';
 });
+
+/* custom question add/remove */
+function renderCustomList(){
+  const box=document.getElementById('cqList'); const cs=getCustom();
+  box.innerHTML = cs.length ? cs.map((c,i)=>
+    `<div class="session"><div class="q" style="font-size:.9rem">✎ ${c.q.replace(/</g,'&lt;')}</div>
+     <button class="action ghost" data-cqdel="${i}" style="padding:8px 14px">Remove</button></div>`).join('')
+    : '<p class="empty" style="font-size:.9rem">No custom questions yet.</p>';
+  box.querySelectorAll('[data-cqdel]').forEach(b=>b.addEventListener('click',()=>{
+    const arr=getCustom(); arr.splice(parseInt(b.dataset.cqdel),1);
+    localStorage.setItem('ic_custom_qs',JSON.stringify(arr)); buildQSelect(); renderCustomList();
+  }));
+}
+document.getElementById('cqAdd').addEventListener('click',()=>{
+  const q=document.getElementById('cqText').value.trim();
+  if(!q){ alert('Type the question first.'); return; }
+  const hints=document.getElementById('cqHints').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const arr=getCustom(); arr.push({q,hints});
+  localStorage.setItem('ic_custom_qs',JSON.stringify(arr));
+  document.getElementById('cqText').value=''; document.getElementById('cqHints').value='';
+  buildQSelect(); renderCustomList();
+});
+renderCustomList();
 
 /* ============ scoring (heuristic, transparent) ============ */
 const CUES = {
