@@ -13,7 +13,7 @@ This is what makes it safe to practice with real career material: the code is pu
 ## Features
 
 - **Story bank** — paste STAR stories as markdown; autosaves locally; ships with two sample stories
-- **Mock interview** — 10 senior-engineering behavioral questions, each with "what good looks like" hints
+- **Mock interview** — 10 built-in senior-engineering behavioral questions (each with "what good looks like" hints), plus your own custom questions
 - **Speech timer** — 90–120 second target window with visual markers
 - **Heuristic scoring** — conciseness (word count → speaking time), STAR completeness, metrics detection, senior-signal vocabulary, each 1–5 with concrete fixes
 - **Session history** — every scored round logged locally, newest first
