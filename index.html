@@ -135,6 +135,22 @@ footer a{color:var(--accent-deep)}
           <div id="cqList" style="margin-top:10px"></div>
         </div>
       </details>
+      <details class="goodlook"><summary>AI feedback (optional)</summary>
+        <div style="margin-top:10px">
+          <p class="hint" style="margin-bottom:10px">Bring your own OpenAI-compatible API key for qualitative scoring. The key stays in your browser; requests go straight from your browser to the API — no server in between.</p>
+          <input id="llmKey" type="password" placeholder="API key (sk-…)"
+            style="width:100%;font-family:'IBM Plex Mono',monospace;font-size:.85rem;padding:10px 12px;border:1.5px solid var(--ink);border-radius:2px;background:#fffdf6;margin-bottom:8px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input id="llmBase" placeholder="https://api.openai.com/v1"
+              style="flex:2;min-width:200px;font-family:'IBM Plex Mono',monospace;font-size:.85rem;padding:10px 12px;border:1.5px solid var(--ink);border-radius:2px;background:#fffdf6">
+            <input id="llmModel" placeholder="gpt-4o-mini"
+              style="flex:1;min-width:140px;font-family:'IBM Plex Mono',monospace;font-size:.85rem;padding:10px 12px;border:1.5px solid var(--ink);border-radius:2px;background:#fffdf6">
+          </div>
+          <div class="btnrow"><button class="action ghost" id="llmSave">Save key</button>
+          <button class="action ghost" id="llmClear">Remove</button></div>
+          <p class="hint" id="llmStatus" style="margin-top:8px"></p>
+        </div>
+      </details>
       <label>Timer</label>
       <div class="timer">
         <span id="clock">00:00</span>
@@ -338,31 +354,91 @@ function scoreAnswer(text){
   return {dims,fixes,avg:avg.toFixed(1),words};
 }
 
-document.getElementById('scoreBtn').addEventListener('click',()=>{
-  const text=document.getElementById('answer').value.trim();
-  if(text.split(/\s+/).length<10){ alert("Write a fuller answer first — at least a few sentences."); return; }
-  const r=scoreAnswer(text);
+/* LLM settings */
+const llmKey=document.getElementById('llmKey'), llmBase=document.getElementById('llmBase'),
+      llmModel=document.getElementById('llmModel'), llmStatus=document.getElementById('llmStatus');
+llmKey.value=localStorage.getItem('ic_llm_key')||'';
+llmBase.value=localStorage.getItem('ic_llm_base')||'';
+llmModel.value=localStorage.getItem('ic_llm_model')||'';
+function llmState(){ llmStatus.textContent = llmKey.value.trim() ? '✓ AI feedback enabled — qualitative scoring on.' : ''; }
+document.getElementById('llmSave').addEventListener('click',()=>{
+  localStorage.setItem('ic_llm_key',llmKey.value.trim());
+  localStorage.setItem('ic_llm_base',llmBase.value.trim());
+  localStorage.setItem('ic_llm_model',llmModel.value.trim());
+  llmState();
+});
+document.getElementById('llmClear').addEventListener('click',()=>{
+  ['ic_llm_key','ic_llm_base','ic_llm_model'].forEach(k=>localStorage.removeItem(k));
+  llmKey.value=llmBase.value=llmModel.value=''; llmState();
+});
+llmState();
+
+async function llmScore(question, answer){
+  const key=localStorage.getItem('ic_llm_key')||'';
+  const base=(localStorage.getItem('ic_llm_base')||'https://api.openai.com/v1').replace(/\/$/,'');
+  const model=localStorage.getItem('ic_llm_model')||'gpt-4o-mini';
+  const bank=(localStorage.getItem('ic_bank')||'').slice(0,4000);
+  const sys=`You are a senior engineering interview coach. Score the candidate's spoken-style answer to a behavioral interview question.
+Rubric (1-5 each): Conciseness (target 90-120s spoken, ~225-300 words), STAR completeness (Situation/Task/Action/Result), Metrics (concrete numbers: %, before/after, scale), Senior signal (tradeoffs weighed, stakeholders aligned, rollout de-risked, systems thinking).
+${bank?`Candidate's story bank (their real material — check whether the answer draws on the strongest relevant story):\n${bank}\n`:''}
+Return JSON only, no markdown fences: {"verdict":"one-line verdict","dims":[{"name":"Conciseness","score":4,"note":"..."},{"name":"STAR completeness","score":3,"note":"..."},{"name":"Metrics","score":2,"note":"..."},{"name":"Senior signal","score":4,"note":"..."}],"fixes":["concrete fix 1","concrete fix 2"]}`;
+  const resp=await fetch(base+'/chat/completions',{method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+    body:JSON.stringify({model,temperature:0.3,response_format:{type:'json_object'},
+      messages:[{role:'system',content:sys},{role:'user',content:`Question: ${question}\n\nAnswer:\n${answer}`}]})});
+  if(!resp.ok) throw new Error('API '+resp.status);
+  const data=await resp.json();
+  const raw=data.choices[0].message.content.replace(/^```json\s*|\s*```$/g,'');
+  const r=JSON.parse(raw);
+  r.words=(answer.trim().match(/\S+/g)||[]).length;
+  r.avg=(r.dims.reduce((a,d)=>a+d.score,0)/r.dims.length).toFixed(1);
+  r.ai=true;
+  return r;
+}
+
+function renderResults(r, question){
   const box=document.getElementById('results'); box.style.display='block';
-  const verdict = r.avg>=4 ? "Strong answer — interview-ready."
-    : r.avg>=3 ? "Solid foundation — one fix away." : "Needs work — see fixes below.";
+  const verdict = r.verdict || (r.avg>=4 ? "Strong answer — interview-ready."
+    : r.avg>=3 ? "Solid foundation — one fix away." : "Needs work — see fixes below.");
   box.innerHTML = `<p class="verdict">${verdict}</p>
-    <p class="hint">Overall ${r.avg} / 5 · ${r.words} words</p>` +
+    <p class="hint">Overall ${r.avg} / 5 · ${r.words} words${r.ai?' · scored by AI':''}</p>` +
     r.dims.map(d=>{
       const cls=d.score>=4?'good':d.score>=2?'mid':'';
-      const pct=d.score/5*100;
+      const pct=Math.max(0,Math.min(5,d.score))/5*100;
       return `<div class="dim"><div class="dim-head"><span>${d.name}</span><span>${d.score}/5</span></div>
         <div class="bar"><i class="${cls}" style="width:${pct}%"></i></div>
-        <p class="hint" style="margin:6px 0 0">${d.note}</p></div>`;
+        <p class="hint" style="margin:6px 0 0">${d.note||''}</p></div>`;
     }).join('') +
     (r.fixes.length?`<ul class="fixes">${r.fixes.map(f=>`<li>${f}</li>`).join('')}</ul>`:`<p class="hint">Nothing to fix — bank this one.</p>`);
   box.scrollIntoView({behavior:'smooth',block:'nearest'});
 
-  // log session
   const sessions=JSON.parse(localStorage.getItem('ic_sessions')||'[]');
   sessions.unshift({date:new Date().toISOString().slice(0,16).replace('T',' '),
-    q:QUESTIONS[qselect.value].q, avg:r.avg, words:r.words,
+    q:question, avg:r.avg, words:r.words,
     scores:Object.fromEntries(r.dims.map(d=>[d.name,d.score]))});
   localStorage.setItem('ic_sessions',JSON.stringify(sessions.slice(0,50)));
+}
+
+document.getElementById('scoreBtn').addEventListener('click', async ()=>{
+  const text=document.getElementById('answer').value.trim();
+  if(text.split(/\s+/).length<10){ alert("Write a fuller answer first — at least a few sentences."); return; }
+  const question=QUESTIONS[qselect.value].q;
+  const btn=document.getElementById('scoreBtn');
+  const hasKey=(localStorage.getItem('ic_llm_key')||'').trim().length>0;
+  if(hasKey){
+    btn.disabled=true; btn.textContent='Scoring with AI…';
+    try{
+      const r=await llmScore(question,text);
+      renderResults(r,question);
+    }catch(e){
+      const r=scoreAnswer(text); r.ai=false;
+      renderResults(r,question);
+      document.getElementById('results').insertAdjacentHTML('afterbegin',
+        `<p class="hint" style="color:var(--accent-deep)">AI scoring failed (${String(e.message||e).replace(/</g,'&lt;')}) — fell back to heuristic scoring. Check your key / base URL.</p>`);
+    }finally{ btn.disabled=false; btn.textContent='Score my answer'; }
+  }else{
+    renderResults(scoreAnswer(text),question);
+  }
 });
 
 /* ============ sessions ============ */
