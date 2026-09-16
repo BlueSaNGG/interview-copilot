@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interview Copilot — Bring your own stories. Practice out loud.</title>
+<meta name="description" content="A private, client-side mock-interview coach. Your story bank never leaves your browser.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f8f3e8; --paper-deep:#ece3cd; --ink:#23201a;
+  --ink-soft:rgba(35,32,26,.74); --ink-faint:rgba(35,32,26,.52);
+  --line:rgba(35,32,26,.22); --accent:#b3402a; --accent-deep:#8a2d1c;
+  --good:#2e7d4f; --warn:#a86a12;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Newsreader',Georgia,serif;color:var(--ink);background:var(--paper-deep);
+  min-height:100vh;padding:40px 18px;font-size:17px;line-height:1.6}
+.wrap{max-width:920px;margin:0 auto;background:var(--paper);border:1.5px solid var(--ink);
+  border-radius:3px;box-shadow:0 24px 60px rgba(35,32,26,.2);overflow:hidden}
+header{padding:44px 44px 30px;border-bottom:3px double var(--ink)}
+.eyebrow{font-family:'IBM Plex Mono',monospace;font-size:.7rem;font-weight:600;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--accent-deep);border:1.5px solid var(--accent-deep);
+  display:inline-block;padding:8px 14px 7px;border-radius:2px;transform:rotate(-1.2deg);
+  background:rgba(179,64,42,.06);margin-bottom:18px}
+h1{font-family:'Fraunces',Georgia,serif;font-weight:650;font-size:clamp(1.9rem,4vw,2.7rem);
+  letter-spacing:-.015em;line-height:1.05;margin-bottom:12px}
+.sub{color:var(--ink-soft);max-width:62ch}
+.privacy{display:flex;gap:10px;align-items:flex-start;margin-top:18px;padding:12px 16px;
+  border:1px dashed var(--line);border-radius:2px;font-size:.92rem;color:var(--ink-soft)}
+.privacy strong{color:var(--ink)}
+.tabs{display:flex;border-bottom:1.5px solid var(--ink);background:rgba(35,32,26,.03)}
+.tabs button{flex:1;font-family:'IBM Plex Mono',monospace;font-size:.76rem;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;padding:16px 8px;background:none;border:none;
+  border-right:1.5px solid var(--ink);color:var(--ink-faint);cursor:pointer}
+.tabs button:last-child{border-right:none}
+.tabs button.active{color:var(--ink);background:var(--paper);box-shadow:inset 0 3px 0 var(--accent)}
+main{padding:36px 44px 48px}
+.tabpane{display:none}
+.tabpane.active{display:block}
+h2{font-family:'Fraunces',Georgia,serif;font-size:1.45rem;font-weight:600;margin-bottom:6px}
+.hint{color:var(--ink-faint);font-size:.95rem;margin-bottom:20px}
+label{display:block;font-family:'IBM Plex Mono',monospace;font-size:.72rem;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);margin:22px 0 8px}
+textarea,select{width:100%;font-family:'Newsreader',Georgia,serif;font-size:1rem;color:var(--ink);
+  background:#fffdf6;border:1.5px solid var(--ink);border-radius:2px;padding:14px 16px;line-height:1.6}
+textarea{min-height:220px;resize:vertical}
+textarea:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px}
+select{font-family:'IBM Plex Mono',monospace;font-size:.9rem}
+.btnrow{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}
+button.action{font-family:'IBM Plex Mono',monospace;font-size:.78rem;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;padding:13px 22px;border-radius:2px;border:1.5px solid var(--ink);
+  background:var(--ink);color:var(--paper);cursor:pointer}
+button.action:hover{background:var(--accent);border-color:var(--accent-deep)}
+button.ghost{background:transparent;color:var(--ink)}
+button.ghost:hover{background:var(--ink);color:var(--paper)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.timer{display:flex;align-items:baseline;gap:14px;margin:6px 0 4px}
+#clock{font-family:'IBM Plex Mono',monospace;font-size:2rem;font-weight:600}
+#clock.over{color:var(--accent-deep)}
+.tmarks{font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--ink-faint)}
+.goodlook{margin-top:14px;border:1px solid var(--line);border-radius:2px;padding:14px 18px;background:rgba(35,32,26,.025)}
+.goodlook summary{font-family:'IBM Plex Mono',monospace;font-size:.74rem;font-weight:600;letter-spacing:.12em;
+  text-transform:uppercase;cursor:pointer;color:var(--accent-deep)}
+.goodlook ul{margin:10px 0 0 20px;color:var(--ink-soft);font-size:.95rem}
+.results{margin-top:26px;border-top:2px solid var(--ink);padding-top:22px}
+.dim{margin:14px 0}
+.dim-head{display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;
+  font-size:.76rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+.bar{height:10px;border:1px solid var(--ink);border-radius:2px;background:#fffdf6;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.bar i.good{background:var(--good)}
+.bar i.mid{background:var(--warn)}
+.fixes{margin-top:18px}
+.fixes li{margin:8px 0 8px 20px;color:var(--ink-soft)}
+.fixes li strong{color:var(--ink)}
+.verdict{font-family:'Fraunces',Georgia,serif;font-size:1.15rem;font-weight:600;margin-bottom:6px}
+.session{border:1px solid var(--line);border-radius:2px;padding:14px 18px;margin:12px 0;
+  display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.session .q{font-weight:500}
+.session .meta{font-family:'IBM Plex Mono',monospace;font-size:.72rem;color:var(--ink-faint)}
+.session .scores{font-family:'IBM Plex Mono',monospace;font-size:.78rem;font-weight:600}
+.empty{color:var(--ink-faint);font-style:italic}
+footer{padding:20px 44px;border-top:1.5px solid var(--ink);font-family:'IBM Plex Mono',monospace;
+  font-size:.72rem;color:var(--ink-faint);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+footer a{color:var(--accent-deep)}
+@media (max-width:640px){ header,main{padding-left:22px;padding-right:22px} #clock{font-size:1.6rem} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Mock interview coach</span>
+    <h1>Interview Copilot</h1>
+    <p class="sub">Bring your own story bank. Pick a question, answer out loud (or in writing), get scored on structure, metrics, and senior signal.</p>
+    <div class="privacy"><span>🔒</span><span><strong>Private by design.</strong> Your stories, answers, and session history live only in this browser's local storage. Nothing is uploaded anywhere — there is no server.</span></div>
+  </header>
+
+  <div class="tabs">
+    <button class="active" data-tab="bank">Story Bank</button>
+    <button data-tab="interview">Mock Interview</button>
+    <button data-tab="sessions">Sessions</button>
+  </div>
+
+  <main>
+    <!-- STORY BANK -->
+    <div class="tabpane active" id="pane-bank">
+      <h2>Your story bank</h2>
+      <p class="hint">Paste your STAR stories here as markdown — one section per story. They stay in your browser and are shown beside you while you practice, so you can check coverage.</p>
+      <textarea id="bank" placeholder="# CI Queue Optimization&#10;- Situation: ...&#10;- Action: ...&#10;- Result: reduced queue depth 93%&#10;&#10;# Jenkins-to-Harness Migration&#10;..."></textarea>
+      <div class="btnrow">
+        <button class="action" id="saveBank">Save stories</button>
+        <button class="action ghost" id="loadSample">Load sample stories</button>
+        <button class="action ghost" id="clearBank">Clear</button>
+      </div>
+      <p class="hint" id="bankStatus" style="margin-top:12px"></p>
+    </div>
+
+    <!-- INTERVIEW -->
+    <div class="tabpane" id="pane-interview">
+      <h2>Mock interview</h2>
+      <p class="hint">Answer in your own words. Aim for 90–120 seconds of speaking — roughly 225–300 written words.</p>
+      <label for="qselect">Question</label>
+      <select id="qselect"></select>
+      <details class="goodlook"><summary>What good looks like</summary><ul id="hints"></ul></details>
+      <label>Timer</label>
+      <div class="timer">
+        <span id="clock">00:00</span>
+        <span class="tmarks">target 01:30 – 02:00</span>
+        <span class="btnrow" style="margin:0 0 0 auto">
+          <button class="action ghost" id="tStart">Start</button>
+          <button class="action ghost" id="tReset">Reset</button>
+        </span>
+      </div>
+      <label for="answer">Your answer</label>
+      <textarea id="answer" placeholder="Type (or paste a transcript of) your answer here..."></textarea>
+      <div class="btnrow">
+        <button class="action" id="scoreBtn">Score my answer</button>
+      </div>
+      <div class="results" id="results" style="display:none"></div>
+    </div>
+
+    <!-- SESSIONS -->
+    <div class="tabpane" id="pane-sessions">
+      <h2>Session history</h2>
+      <p class="hint">Every scored round is logged here, newest first. Stored locally only.</p>
+      <div id="sessionList"><p class="empty">No sessions yet — go run a mock interview.</p></div>
+      <div class="btnrow"><button class="action ghost" id="clearSessions">Clear history</button></div>
+    </div>
+  </main>
+
+  <footer>
+    <span>Interview Copilot — client-side only, no tracking.</span>
+    <span><a href="https://github.com/BlueSaNGG/interview-copilot" target="_blank" rel="noopener">Source on GitHub</a></span>
+  </footer>
+</div>
+
+<script>
+/* ============ data ============ */
+const QUESTIONS = [
+  {q:"Tell me about yourself.", hints:["Lead with identity, not chronology","Name your specialty and the scale you operate at","Cite 2–3 metrics","End with what you're looking for"]},
+  {q:"Tell me about a time you improved the reliability of a system you owned.", hints:["Frame it as a systems problem, not a single fix","Name the tradeoff you weighed","Give before/after numbers","Mention rollout safety"]},
+  {q:"Walk me through a large migration you contributed to.", hints:["Scale: how many jobs/services/teams","Reusable patterns beat one-off moves","How you kept developer trust","What you'd do differently"]},
+  {q:"How do you balance governance with developer velocity?", hints:["Governance as enablement, not gatekeeping","A concrete mechanism (CODEOWNERS, scoped access…)","When governance is NOT worth it"]},
+  {q:"Tell me about a phased rollout you designed.", hints:["Why phases — what risk did staging buy you","Observability before enforcement","What would flip it to blocking"]},
+  {q:"Tell me about a time you reduced operational toil.", hints:["Recurring cost, quantified","Verification, not just automation","Stewardship framing"]},
+  {q:"Tell me about a disagreement with a stakeholder or teammate.", hints:["Disagreement as tradeoff, not personalities","How you resolved it: data or compromise","What you learned"]},
+  {q:"What's the most impactful thing you've built, and why?", hints:["Impact in org terms, not just technical cleverness","One metric that proves it","Why it mattered beyond your team"]},
+  {q:"Tell me about a time you failed or got something wrong.", hints:["Own it fast, no hedging","Root cause in one sentence","The durable change you made after"]},
+  {q:"How do you approach mentoring or leveling up teammates?", hints:["A specific person/situation, not platitudes","What you changed about YOUR approach","Evidence it worked"]}
+];
+
+const SAMPLE_BANK = `# API Latency Reduction
+- Situation: p99 latency on the checkout API crept past our 800ms SLO during peak traffic.
+- Action: traced it to N+1 queries in the pricing service, added batched fetching and a short-TTL cache, rolled out behind a flag with canary analysis.
+- Result: p99 dropped 62% to ~300ms; cache hit rate 91%.
+
+# Flaky Test Quarantine
+- Situation: CI signal was unusable — 30% of main-branch runs failed on flakes.
+- Action: built a quarantine pipeline that auto-bisected flakes, filed tickets with repro data, and blocked only on real failures.
+- Result: flake-driven failures down to 4%; developer trust in CI recovered.`;
+
+/* ============ tabs ============ */
+document.querySelectorAll('.tabs button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.tabpane').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById('pane-'+b.dataset.tab).classList.add('active');
+    if(b.dataset.tab==='sessions') renderSessions();
+  });
+});
+
+/* ============ story bank ============ */
+const bankEl = document.getElementById('bank');
+const bankStatus = document.getElementById('bankStatus');
+bankEl.value = localStorage.getItem('ic_bank') || '';
+function bankCount(){
+  const n = bankEl.value.split(/^#/m).length - 1;
+  bankStatus.textContent = bankEl.value.trim()
+    ? `Saved locally · ${n} ${n===1?'story':'stories'} in your bank.` : '';
+}
+document.getElementById('saveBank').addEventListener('click',()=>{
+  localStorage.setItem('ic_bank', bankEl.value); bankCount();
+  bankStatus.textContent = '✓ ' + bankStatus.textContent;
+});
+document.getElementById('loadSample').addEventListener('click',()=>{
+  bankEl.value = SAMPLE_BANK; localStorage.setItem('ic_bank', SAMPLE_BANK); bankCount();
+});
+document.getElementById('clearBank').addEventListener('click',()=>{
+  if(confirm('Clear your story bank from this browser?')){ bankEl.value=''; localStorage.removeItem('ic_bank'); bankCount(); }
+});
+bankEl.addEventListener('input',()=>{ clearTimeout(bankEl._t); bankEl._t=setTimeout(()=>{ localStorage.setItem('ic_bank',bankEl.value); bankCount(); },800); });
+bankCount();
+
+/* ============ interview ============ */
+const qselect = document.getElementById('qselect');
+QUESTIONS.forEach((item,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=item.q; qselect.appendChild(o); });
+function renderHints(){
+  const ul=document.getElementById('hints'); ul.innerHTML='';
+  QUESTIONS[qselect.value].hints.forEach(h=>{ const li=document.createElement('li'); li.textContent=h; ul.appendChild(li); });
+}
+qselect.addEventListener('change',renderHints); renderHints();
+
+/* timer */
+let t0=null, tInt=null;
+const clock=document.getElementById('clock');
+function fmt(s){ return String(Math.floor(s/60)).padStart(2,'0')+':'+String(Math.floor(s%60)).padStart(2,'0'); }
+document.getElementById('tStart').addEventListener('click',e=>{
+  if(tInt){ clearInterval(tInt); tInt=null; e.target.textContent='Resume'; return; }
+  if(!t0) t0=Date.now();
+  const base=(parseFloat(clock.dataset.elapsed)||0);
+  const start=Date.now();
+  e.target.textContent='Pause';
+  tInt=setInterval(()=>{
+    const s=base+(Date.now()-start)/1000;
+    clock.dataset.elapsed=s; clock.textContent=fmt(s);
+    clock.classList.toggle('over', s>120);
+  },250);
+});
+document.getElementById('tReset').addEventListener('click',()=>{
+  clearInterval(tInt); tInt=null; t0=null; clock.dataset.elapsed=0;
+  clock.textContent='00:00'; clock.classList.remove('over');
+  document.getElementById('tStart').textContent='Start';
+});
+
+/* ============ scoring (heuristic, transparent) ============ */
+const CUES = {
+  Situation:["situation","context","background","problem","when i joined","the issue was"],
+  Task:["task","goal","responsible for","needed to","my job was","objective"],
+  Action:["i built","i designed","i led","i implemented","i migrated","i automated","we rolled out","i worked on","i created"],
+  Result:["result","reduced","improved","dropped","increased","saved","outcome","impact","went from"]
+};
+const SENIOR = ["tradeoff","trade-off","stakeholder","rollout","roll out","measured","phased","canary","slo","governance","adoption","ownership"];
+const METRIC_RE = /(\d+\s?%|\d+\s?x\b|\d+\+|\$\s?[\d,]+|[\d,]+\s?(ms|s|hours?|days?)\b)/i;
+
+function scoreAnswer(text){
+  const t=text.toLowerCase();
+  const words=(text.trim().match(/\S+/g)||[]).length;
+  const dims=[]; const fixes=[];
+
+  // 1. conciseness — 150wpm; target 90–120s => 225–300 words
+  let cScore, cNote;
+  if(words>=200&&words<=330){ cScore=5; cNote=`${words} words ≈ ${Math.round(words/2.5)}s of speaking — right in the pocket.`; }
+  else if(words>=140&&words<200){ cScore=4; cNote=`${words} words ≈ ${Math.round(words/2.5)}s — a touch short; add one concrete detail.`; }
+  else if(words>330&&words<=450){ cScore=4; cNote=`${words} words ≈ ${Math.round(words/2.5)}s — slightly long; trim setup.`; }
+  else if(words<140){ cScore=2; cNote=`Only ${words} words (≈${Math.round(words/2.5)}s). Interviewers read short as shallow — expand the Action.`; fixes.push("<strong>Add substance:</strong> under 140 words rarely survives a senior loop. Flesh out what <em>you</em> did, step by step."); }
+  else { cScore=2; cNote=`${words} words (≈${Math.round(words/2.5)}s) — too long; you'll lose them. Cut background to two sentences.`; fixes.push("<strong>Tighten:</strong> cap background at two sentences, then get to your actions."); }
+  dims.push({name:"Conciseness",score:cScore,note:cNote});
+
+  // 2. STAR completeness
+  const hit=Object.entries(CUES).map(([k,ws])=>({k,found:ws.some(w=>t.includes(w))}));
+  const starScore=Math.round(hit.filter(h=>h.found).length/4*5);
+  const missing=hit.filter(h=>!h.found).map(h=>h.k);
+  dims.push({name:"STAR completeness",score:starScore,
+    note: hit.filter(h=>h.found).map(h=>h.k).join(", ")||"No STAR structure detected."});
+  if(missing.length) fixes.push(`<strong>Missing ${missing.join(" / ")}:</strong> ${missing.includes("Result")?"end with what changed, with a number":missing.includes("Action")?"say what <em>you</em> did, concretely":"add a sentence covering it"}.`);
+
+  // 3. metrics
+  const mScore = METRIC_RE.test(text) ? 5 : 1;
+  dims.push({name:"Metrics",score:mScore,note: METRIC_RE.test(text)?"Concrete numbers present — good.":"No numbers found."});
+  if(mScore===1) fixes.push("<strong>Add a metric:</strong> every senior story needs one number — a %, a before/after, a scale.");
+
+  // 4. senior signal
+  const sHits=[...new Set(SENIOR.filter(w=>t.includes(w)))];
+  const sScore = sHits.length>=3?5 : sHits.length===2?4 : sHits.length===1?3 : 1;
+  dims.push({name:"Senior signal",score:sScore,note: sHits.length?`Signals: ${sHits.join(", ")}`:"No senior-level signals detected."});
+  if(sScore<=3) fixes.push("<strong>Sound senior:</strong> name a tradeoff you weighed, a stakeholder you aligned, or how you de-risked the rollout.");
+
+  const avg=(dims.reduce((a,d)=>a+d.score,0)/dims.length);
+  return {dims,fixes,avg:avg.toFixed(1),words};
+}
+
+document.getElementById('scoreBtn').addEventListener('click',()=>{
+  const text=document.getElementById('answer').value.trim();
+  if(text.split(/\s+/).length<10){ alert("Write a fuller answer first — at least a few sentences."); return; }
+  const r=scoreAnswer(text);
+  const box=document.getElementById('results'); box.style.display='block';
+  const verdict = r.avg>=4 ? "Strong answer — interview-ready."
+    : r.avg>=3 ? "Solid foundation — one fix away." : "Needs work — see fixes below.";
+  box.innerHTML = `<p class="verdict">${verdict}</p>
+    <p class="hint">Overall ${r.avg} / 5 · ${r.words} words</p>` +
+    r.dims.map(d=>{
+      const cls=d.score>=4?'good':d.score>=2?'mid':'';
+      const pct=d.score/5*100;
+      return `<div class="dim"><div class="dim-head"><span>${d.name}</span><span>${d.score}/5</span></div>
+        <div class="bar"><i class="${cls}" style="width:${pct}%"></i></div>
+        <p class="hint" style="margin:6px 0 0">${d.note}</p></div>`;
+    }).join('') +
+    (r.fixes.length?`<ul class="fixes">${r.fixes.map(f=>`<li>${f}</li>`).join('')}</ul>`:`<p class="hint">Nothing to fix — bank this one.</p>`);
+  box.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  // log session
+  const sessions=JSON.parse(localStorage.getItem('ic_sessions')||'[]');
+  sessions.unshift({date:new Date().toISOString().slice(0,16).replace('T',' '),
+    q:QUESTIONS[qselect.value].q, avg:r.avg, words:r.words,
+    scores:Object.fromEntries(r.dims.map(d=>[d.name,d.score]))});
+  localStorage.setItem('ic_sessions',JSON.stringify(sessions.slice(0,50)));
+});
+
+/* ============ sessions ============ */
+function renderSessions(){
+  const list=document.getElementById('sessionList');
+  const sessions=JSON.parse(localStorage.getItem('ic_sessions')||'[]');
+  if(!sessions.length){ list.innerHTML='<p class="empty">No sessions yet — go run a mock interview.</p>'; return; }
+  list.innerHTML=sessions.map(s=>`<div class="session">
+    <div><div class="q">${s.q}</div><div class="meta">${s.date} · ${s.words} words</div></div>
+    <div class="scores">${s.avg}/5</div></div>`).join('');
+}
+document.getElementById('clearSessions').addEventListener('click',()=>{
+  if(confirm('Clear session history from this browser?')){ localStorage.removeItem('ic_sessions'); renderSessions(); }
+});
+</script>
+</body>
+</html>
