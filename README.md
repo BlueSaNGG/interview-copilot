@@ -27,9 +27,15 @@ This is what makes it safe to practice with real career material: the code is pu
 | Metrics | At least one concrete number (%, before/after, scale) |
 | Senior signal | Tradeoff named, stakeholder aligned, rollout de-risked |
 
+## AI scoring (optional)
+
+Add your own OpenAI-compatible API key in the Mock Interview tab for qualitative
+scoring: the app sends your question, answer, and story bank straight from your
+browser to the API and renders structured 1–5 feedback. Without a key, the
+transparent heuristic scorer is used instead.
+
 ## Roadmap
 
-- Optional BYO-LLM-key feedback for qualitative scoring
 - Spoken-answer transcription via Web Speech API
 - Question packs per role (platform, backend, EM)
 
